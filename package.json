@@ -5,7 +5,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon app.js"
   },
   "repository": {
     "type": "git",
@@ -19,6 +20,7 @@
   "homepage": "https://github.com/ElNinoLombard/tp-1-web-fullstack-ynov#readme",
   "dependencies": {
     "express": "^4.18.2",
-    "firebase": "^8.10.0"
+    "firebase": "^8.10.0",
+    "nodemon": "^3.0.1"
   }
 }

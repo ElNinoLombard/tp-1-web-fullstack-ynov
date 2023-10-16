@@ -6,7 +6,6 @@ const app = express();
 const firebaseConfig = {
   apiKey: "AIzaSyC82QcqpgRq9_nwjQUwuVWuKO3-ftz4Veg",
   authDomain: "tp-1-fullstack-web-dev-ynov.firebaseapp.com",
-  databaseURL: "https://tp-1-fullstack-web-dev-ynov-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "tp-1-fullstack-web-dev-ynov",
   storageBucket: "tp-1-fullstack-web-dev-ynov.appspot.com",
   messagingSenderId: "1063655953759",
@@ -16,23 +15,30 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 
-const database = firebase.database();
+const firestore = firebase.firestore();
 
 app.use(express.json());
 
-app.post('/api/items', (req, res) => {
-  const newItem = req.body;
-  const itemsRef = database.ref('/items');
-  const newItemRef = itemsRef.push(newItem);
-  res.status(201).json({ id: newItemRef.key });
+app.post('/api/items', async (req, res) => {
+  try {
+    const newItem = req.body;
+    const itemsCollection = firestore.collection('items');
+    const newItemDoc = await itemsCollection.add(newItem);
+    res.status(201).json({ id: newItemDoc.id });
+  } catch (error) {
+    console.error("An error occurred while adding an item:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
-// Read all items
 app.get('/api/items', async (req, res) => {
   try {
-    const itemsRef = database.ref('/items');
-    const snapshot = await itemsRef.once('value');
-    const items = snapshot.val();
+    const itemsCollection = firestore.collection('items');
+    const itemsSnapshot = await itemsCollection.get();
+    const items = [];
+    itemsSnapshot.forEach((doc) => {
+      items.push({ id: doc.id, ...doc.data() });
+    });
     res.json(items);
   } catch (error) {
     console.error("An error occurred while fetching items:", error);
@@ -40,21 +46,24 @@ app.get('/api/items', async (req, res) => {
   }
 });
 
-// Update an item
 app.put('/api/items/:id', (req, res) => {
   const itemId = req.params.id;
   const updatedItem = req.body;
-  const itemRef = database.ref(`/items/${itemId}`);
-  itemRef.set(updatedItem);
+  const itemRef = firestore.collection('items').doc(itemId);
+  itemRef.set(updatedItem, { merge: true });
   res.status(204).send();
 });
 
-// Delete an item
-app.delete('/api/items/:id', (req, res) => {
-  const itemId = req.params.id;
-  const itemRef = database.ref(`/items/${itemId}`);
-  itemRef.remove();
-  res.status(204).send();
+app.delete('/api/items/:id', async (req, res) => {
+  try {
+    const itemId = req.params.id;
+    const itemRef = firestore.collection('items').doc(itemId);
+    await itemRef.delete();
+    res.status(204).send();
+  } catch (error) {
+    console.error("An error occurred while deleting an item:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 const PORT = process.env.PORT || 3000;
